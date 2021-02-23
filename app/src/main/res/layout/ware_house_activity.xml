@@ -5,11 +5,32 @@
     android:layout_height="match_parent"
     >
 
-    <TextView
+    <Spinner
+        android:id="@+id/ware_house_activity_spinner"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="hello world"
-        android:textSize="30sp"
+        android:backgroundTint="@color/black"
         />
+
+    <TextView
+        android:id="@+id/ware_house_activity_add_new_item"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerHorizontal="true"
+        android:text="@string/add_new_item"
+        android:textColor="@color/blue"
+        android:textSize="24sp"
+        android:clickable="true"
+        android:focusable="true"
+        android:onClick="onClick"
+        />
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/ware_house_activity_recycler_view"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/ware_house_activity_spinner"
+        />
+
 
 </RelativeLayout>

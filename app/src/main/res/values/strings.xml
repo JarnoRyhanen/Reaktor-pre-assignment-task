@@ -1,4 +1,5 @@
 <resources>
     <string name="app_name">Warehouse</string>
     <string name="mainscreen">Main screen</string>
+    <string name="add_new_item">Add new item+</string>
 </resources>

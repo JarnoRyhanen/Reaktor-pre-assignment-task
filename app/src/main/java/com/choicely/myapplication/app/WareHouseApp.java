@@ -14,5 +14,6 @@ public class WareHouseApp extends Application {
         super.onCreate();
         Log.d(TAG, "onCreate: App started");
         RealmHelper.init(this);
+
     }
 }
