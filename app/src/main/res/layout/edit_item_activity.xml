@@ -5,12 +5,63 @@
     android:layout_height="match_parent"
     >
 
-    <TextView
+    <LinearLayout
+        android:id="@+id/edit_item_activity_item_name_linear_layout"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="hellow world"
-        android:textSize="20sp"
-        />
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="20dp"
+        android:gravity="center"
+        android:orientation="vertical"
+        >
 
+        <TextView
+            android:id="@+id/edit_item_activity_item_name_text_view"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="left"
+            android:layout_marginTop="20dp"
+            android:labelFor="@id/edit_item_activity_item_name_edit_text"
+            android:text="@string/item_name"
+            />
+
+        <EditText
+            android:id="@+id/edit_item_activity_item_name_edit_text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:hint="@string/item_name"
+            android:textSize="24sp"
+            />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/edit_item_activity_item_name_linear_layout"
+        android:layout_centerHorizontal="true"
+        android:gravity="center"
+        android:orientation="vertical"
+        >
+
+        <TextView
+            android:id="@+id/edit_item_activity_category_name_text_view"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="left"
+            android:layout_marginTop="20dp"
+            android:labelFor="@id/edit_item_activity_category_name_edit_text"
+            android:text="@string/category_name"
+            />
+
+        <EditText
+            android:id="@+id/edit_item_activity_category_name_edit_text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:hint="@string/category_name"
+            android:textSize="24sp"
+            />
+    </LinearLayout>
 
 </RelativeLayout>

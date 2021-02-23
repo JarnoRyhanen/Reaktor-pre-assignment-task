@@ -2,4 +2,6 @@
     <string name="app_name">Warehouse</string>
     <string name="mainscreen">Main screen</string>
     <string name="add_new_item">Add new item+</string>
+    <string name="item_name">Item name</string>
+    <string name="category_name">Category</string>
 </resources>
