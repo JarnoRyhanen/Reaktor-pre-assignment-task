@@ -44,18 +44,20 @@ public class EditItemActivity extends AppCompatActivity {
         listPopupWindow = new ListPopupWindow(this);
         listPopupWindow.setAdapter(new ArrayAdapter<>(this,
                 R.layout.category_list_window, R.id.category_text_view,
-                new String[]{"beanie", "facemask", "gloves"}));
+                new String[]{"Beanies", "Face masks", "Gloves"}));
 
         listPopupWindow.setAnchorView(itemCategoryEditText);
         listPopupWindow.setWidth(ListPopupWindow.MATCH_PARENT);
         listPopupWindow.setHeight(ListPopupWindow.WRAP_CONTENT);
 
-        sampleCategoryList.add("beanie");
-        sampleCategoryList.add("face mask");
-        sampleCategoryList.add("gloves");
+        sampleCategoryList.add("Beanies");
+        sampleCategoryList.add("Face masks");
+        sampleCategoryList.add("Gloves");
 
         itemCategoryEditText.setOnFocusChangeListener(onFocusChangeListener);
         listPopupWindow.setOnItemClickListener(categoryPopupItemClickListener);
+
+        itemID = getIntent().getStringExtra(IntentKeys.ITEM_ID);
 
         if (itemID == null) {
             itemID = UUID.randomUUID().toString();
@@ -74,7 +76,6 @@ public class EditItemActivity extends AppCompatActivity {
 
     private boolean checkIfEditTextFieldsAreEmpty() {
         if (itemNameEditText.getText().toString().isEmpty() || itemCategoryEditText.getText().toString().isEmpty()) {
-            Log.d(TAG, "checkIfEditTextFieldsAreEmpty: nulll");
             Toast.makeText(this, "Both text fields must be filled", Toast.LENGTH_SHORT).show();
             return true;
         }

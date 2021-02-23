@@ -69,7 +69,7 @@ public class WareHouseRecyclerViewAdapter extends RecyclerView.Adapter<WareHouse
         }
 
         private final View.OnClickListener onRowClick = view -> {
-            Context ctx = itemView.getContext();
+            Context ctx = itemName.getContext();
             Intent intent = new Intent(ctx, EditItemActivity.class);
             intent.putExtra(IntentKeys.ITEM_ID, itemID);
             Log.d(TAG, "itemId: " + itemID);

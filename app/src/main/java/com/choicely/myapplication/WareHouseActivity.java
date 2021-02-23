@@ -1,13 +1,11 @@
 package com.choicely.myapplication;
 
-import android.content.ClipData;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
-import android.widget.LinearLayout;
 import android.widget.Spinner;
 
 import androidx.annotation.Nullable;
@@ -26,13 +24,15 @@ import io.realm.RealmResults;
 public class WareHouseActivity extends AppCompatActivity {
 
     private final static String TAG = "WareHouseActivity";
+    private boolean firstResume;
 
     private Spinner spinner;
     private String itemCategory;
     private RecyclerView recyclerView;
     private WareHouseRecyclerViewAdapter adapter;
 
-    private Realm realm = RealmHelper.getInstance().getRealm();
+    private final Realm realm = RealmHelper.getInstance().getRealm();
+    List<String> itemCategories = new ArrayList<>();
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -45,22 +45,30 @@ public class WareHouseActivity extends AppCompatActivity {
         adapter = new WareHouseRecyclerViewAdapter(this);
         recyclerView.setAdapter(adapter);
 
-        addItemsToSpinner();
+        firstResume = true;
+        addItemCategoriesToList();
+    }
+
+    private void addItemCategoriesToList() {
+        itemCategories.add("All items");
+        itemCategories.add("Beanies");
+        itemCategories.add("Face masks");
+        itemCategories.add("Gloves");
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        updateContent();
+        if(firstResume){
+            addItemsToSpinner();
+            firstResume = false;
+        }else {
+            Log.d(TAG, "performItemFiltering: item category selected: " + itemCategory);
+            performItemFiltering();
+        }
     }
 
     private void addItemsToSpinner() {
-        List<String> itemCategories = new ArrayList<>();
-        itemCategories.add("All items");
-        itemCategories.add("Beanies");
-        itemCategories.add("Facemasks");
-        itemCategories.add("gloves");
-
         ArrayAdapter arrayAdapter = new ArrayAdapter(this, R.layout.spinner_item, itemCategories);
         spinner.setAdapter(arrayAdapter);
 
@@ -85,11 +93,19 @@ public class WareHouseActivity extends AppCompatActivity {
         if (itemCategory == null || itemCategory.equals("All items")) {
             updateContent();
         } else {
+            Log.d(TAG, "performItemFiltering: item category selected: " + itemCategory);
             filterImages();
         }
     }
 
     private void filterImages() {
+        adapter.clear();
+
+        RealmResults<ItemData> items = realm.where(ItemData.class).contains("itemCategory", itemCategory).findAll();
+        for (ItemData item : items) {
+            adapter.add(item);
+        }
+        adapter.notifyDataSetChanged();
     }
 
     private void updateContent() {
