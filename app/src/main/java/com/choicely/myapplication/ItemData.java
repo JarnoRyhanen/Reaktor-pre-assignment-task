@@ -33,4 +33,5 @@ public class ItemData extends RealmObject {
     public void setItemName(String itemName) {
         this.itemName = itemName;
     }
+
 }

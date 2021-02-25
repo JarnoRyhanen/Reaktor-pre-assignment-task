@@ -4,4 +4,6 @@
     <string name="add_new_item">Add new item+</string>
     <string name="item_name">Item name</string>
     <string name="category_name">Category</string>
+    <string name="progress_bar_text">Fetching items, please wait, this may take a while</string>
+    <string name="search_query_hint">Search for items</string>
 </resources>

@@ -4,6 +4,9 @@
     package="com.choicely.myapplication"
     >
 
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
     <application
         android:name=".app.WareHouseApp"
         android:allowBackup="true"
@@ -13,14 +16,19 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.MyApplication"
         >
-        <activity android:name=".EditItemActivity"/>
+        <meta-data
+            android:name="com.google.android.actions"
+            android:resource="@xml/menu"
+            />
+
+        <activity android:name=".EditItemActivity" />
         <activity android:name=".WareHouseActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
+
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-
     </application>
 
 </manifest>

@@ -8,16 +8,15 @@ import io.realm.RealmConfiguration;
 public class RealmHelper {
 
     private static final String TAG = "RealmHelper";
+    private RealmConfiguration config;
 
-    private static final String REALM_NAME = "csvcompanion.realm";
+    private static final String REALM_NAME = "WareHouse.realm";
     private static final int REALM_VERSION = RealmHistory.VERSION_1;
 
     private Realm realm;
 
     private static class RealmHistory {
-
         static final int VERSION_1 = 1;
-
     }
 
     private static RealmHelper instance;
@@ -44,14 +43,18 @@ public class RealmHelper {
 
         // The RealmConfiguration is created using the builder pattern.
         // The Realm file will be located in Context.getFilesDir() with name "myrealm.realm"
-        RealmConfiguration config = new RealmConfiguration.Builder()
+        instance.config = new RealmConfiguration.Builder()
                 .name(REALM_NAME)
                 .schemaVersion(REALM_VERSION)
                 .allowWritesOnUiThread(true)
                 .deleteRealmIfMigrationNeeded()
                 .build();
         // Use the config
-        instance.realm = Realm.getInstance(config);
+        instance.realm = Realm.getInstance(instance.config);
+    }
+
+    public Realm getCurrentThreadRealm() {
+        return Realm.getInstance(instance.config);
     }
 
     public Realm getRealm() {

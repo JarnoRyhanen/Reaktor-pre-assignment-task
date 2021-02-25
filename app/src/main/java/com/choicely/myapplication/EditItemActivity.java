@@ -1,4 +1,4 @@
-package com.choicely.myapplication;
+    package com.choicely.myapplication;
 
 import android.os.Bundle;
 import android.util.Log;

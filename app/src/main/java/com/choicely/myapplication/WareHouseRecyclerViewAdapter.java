@@ -17,7 +17,7 @@ import java.util.List;
 public class WareHouseRecyclerViewAdapter extends RecyclerView.Adapter<WareHouseRecyclerViewAdapter.WareHouseViewHolder> {
 
     private static final String TAG = "WareHouseAdapter";
-    private List<ItemData> itemDataList = new ArrayList<>();
+    private final List<ItemData> itemDataList = new ArrayList<>();
 
     private final Context context;
 
@@ -28,7 +28,6 @@ public class WareHouseRecyclerViewAdapter extends RecyclerView.Adapter<WareHouse
     @NonNull
     @Override
     public WareHouseViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-
         return new WareHouseViewHolder(LayoutInflater.from(context).inflate(R.layout.ware_house_list_row, parent, false));
     }
 
