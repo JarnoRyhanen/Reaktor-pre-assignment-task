@@ -33,7 +33,6 @@ public class WareHouseActivity extends AppCompatActivity {
     private final static String TAG = "WareHouseActivity";
 
     private final ApiRequests apiRequests = new ApiRequests();
-//    private final UpdateItems updateItems = new UpdateItems();
     private final AlarmHelper alarmHelper = new AlarmHelper(this);
 
     private final Realm realm = RealmHelper.getInstance().getRealm();
@@ -96,7 +95,6 @@ public class WareHouseActivity extends AppCompatActivity {
     }
 
     private void startAlarmHelper() {
-        Log.d(TAG, "runAlarmHelper: alarmhelper runned");
         alarmHelper.updateEveryOneHour();
     }
 
