@@ -65,10 +65,12 @@ public class ApiRequests {
             Log.d(TAG, "parseData: " + dataArray.length());
             for (int i = 0; i < dataArray.length(); i++) {
                 ItemData itemData = new ItemData();
+
                 JSONObject obj = dataArray.getJSONObject(i);
                 String name = obj.getString("name");
                 String category = obj.getString("type");
                 String id = obj.getString("id");
+
                 itemData.setId(id);
                 itemData.setItemName(name);
                 itemData.setItemCategory(category);
@@ -90,13 +92,11 @@ public class ApiRequests {
         realm.close();
     }
 
-
     private allItemsDownLoadedListener listener;
 
     public interface allItemsDownLoadedListener {
         void onItemDownLoaded();
     }
-
     public void setListener(allItemsDownLoadedListener listener) {
         this.listener = listener;
     }

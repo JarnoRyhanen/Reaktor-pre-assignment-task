@@ -33,6 +33,9 @@ public class WareHouseActivity extends AppCompatActivity {
     private final static String TAG = "WareHouseActivity";
 
     private final ApiRequests apiRequests = new ApiRequests();
+//    private final UpdateItems updateItems = new UpdateItems();
+    private final AlarmHelper alarmHelper = new AlarmHelper(this);
+
     private final Realm realm = RealmHelper.getInstance().getRealm();
 
     private final ApiRequests.allItemsDownLoadedListener allItemsDownLoadedListener = new ApiRequests.allItemsDownLoadedListener() {
@@ -57,7 +60,7 @@ public class WareHouseActivity extends AppCompatActivity {
     private RecyclerView recyclerView;
     private WareHouseRecyclerViewAdapter adapter;
 
-    List<String> itemCategories = new ArrayList<>();
+    private final List<String> itemCategories = new ArrayList<>();
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -77,20 +80,28 @@ public class WareHouseActivity extends AppCompatActivity {
         addItemCategoriesToList();
 
         if (realm.isEmpty()) {
-            apiRequests.getData("beanies");
-            apiRequests.getData("facemasks");
-            apiRequests.getData("gloves");
+            downloadItems();
         }
         if (!realm.isEmpty()) {
             progressBar.setVisibility(View.GONE);
             progressBarTextView.setVisibility(View.GONE);
         }
+        startAlarmHelper();
         apiRequests.setListener(allItemsDownLoadedListener);
+    }
+    public void downloadItems(){
+        apiRequests.getData("beanies");
+        apiRequests.getData("facemasks");
+        apiRequests.getData("gloves");
+    }
+
+    private void startAlarmHelper() {
+        Log.d(TAG, "runAlarmHelper: alarmhelper runned");
+        alarmHelper.updateEveryOneHour();
     }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-
         MenuInflater inflater = getMenuInflater();
         inflater.inflate(R.menu.ware_house_activity_menu, menu);
 
@@ -113,7 +124,6 @@ public class WareHouseActivity extends AppCompatActivity {
                         .sort("itemName", Sort.ASCENDING));
                 return false;
             }
-
         });
         return super.onCreateOptionsMenu(menu);
     }
