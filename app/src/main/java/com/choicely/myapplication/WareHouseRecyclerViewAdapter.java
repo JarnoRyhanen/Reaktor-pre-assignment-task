@@ -39,6 +39,8 @@ public class WareHouseRecyclerViewAdapter extends RecyclerView.Adapter<WareHouse
         holder.itemName.setText(item.getItemName());
         holder.itemCategory.setText(item.getItemCategory());
         holder.itemManufacturer.setText(item.getItemManufacturer());
+        holder.itemAvailability.setText(item.getAvailabilityValue());
+        holder.itemHttpCode.setText(item.getHttpStatusCode());
     }
 
     @Override
@@ -60,6 +62,8 @@ public class WareHouseRecyclerViewAdapter extends RecyclerView.Adapter<WareHouse
         public TextView itemManufacturer;
         public TextView itemName;
         public TextView itemCategory;
+        public TextView itemAvailability;
+        public TextView itemHttpCode;
 
         public WareHouseViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -67,6 +71,8 @@ public class WareHouseRecyclerViewAdapter extends RecyclerView.Adapter<WareHouse
             itemName = itemView.findViewById(R.id.ware_house_list_row_item_name);
             itemCategory = itemView.findViewById(R.id.ware_house_list_row_item_category);
             itemManufacturer = itemView.findViewById(R.id.ware_house_list_row_item_manufacturer);
+            itemAvailability = itemView.findViewById(R.id.ware_house_list_row_item_availability);
+            itemHttpCode = itemView.findViewById(R.id.ware_house_list_row_item_http_code);
         }
 
         private final View.OnClickListener onRowClick = view -> {

@@ -30,7 +30,6 @@
             android:layout_height="wrap_content"
             tools:text="category"
             />
-
         <TextView
             android:id="@+id/ware_house_list_row_item_manufacturer"
             android:layout_width="wrap_content"
@@ -38,5 +37,20 @@
             android:layout_marginStart="20dp"
             tools:text="@string/manufacturer_name"
             />
+        <TextView
+            android:layout_marginStart="20dp"
+            android:id="@+id/ware_house_list_row_item_http_code"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            tools:text="@string/availability"
+            />
+        <TextView
+            android:layout_marginStart="20dp"
+            android:id="@+id/ware_house_list_row_item_availability"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            tools:text="@string/http_code"
+            />
+
     </LinearLayout>
 </RelativeLayout>

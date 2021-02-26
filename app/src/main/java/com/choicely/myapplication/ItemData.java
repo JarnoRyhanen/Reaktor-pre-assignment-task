@@ -10,6 +10,8 @@ public class ItemData extends RealmObject {
     private String itemCategory;
     private String itemName;
     private String itemManufacturer;
+    private String httpStatusCode;
+    private String stockValue;
 
     public String getId() {
         return id;
@@ -41,5 +43,21 @@ public class ItemData extends RealmObject {
 
     public void setItemManufacturer(String itemManufacturer) {
         this.itemManufacturer = itemManufacturer;
+    }
+
+    public String getHttpStatusCode() {
+        return httpStatusCode;
+    }
+
+    public void setHttpStatusCode(String httpStatusCode) {
+        this.httpStatusCode = httpStatusCode;
+    }
+
+    public String getAvailabilityValue() {
+        return stockValue;
+    }
+
+    public void setAvailability(String stockValue) {
+        this.stockValue = stockValue;
     }
 }

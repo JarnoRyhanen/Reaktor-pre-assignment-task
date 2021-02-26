@@ -32,8 +32,8 @@ public class WareHouseActivity extends AppCompatActivity {
 
     private final static String TAG = "WareHouseActivity";
 
+    private final XmlParser xmlParser = new XmlParser();
     private final ApiRequests apiRequests = new ApiRequests();
-    private final AlarmHelper alarmHelper = new AlarmHelper(this);
 
     private final Realm realm = RealmHelper.getInstance().getRealm();
 
@@ -45,6 +45,12 @@ public class WareHouseActivity extends AppCompatActivity {
                 progressBarTextView.setVisibility(View.GONE);
                 performItemFiltering();
             });
+        }
+    };
+    private final XmlParser.statusCodeAndAvailabilityAddedListener statusCodeAndAvailabilityAddedListener = new XmlParser.statusCodeAndAvailabilityAddedListener() {
+        @Override
+        public void onStatusCodeAndAvailabilityLoaded() {
+            updateContent(realm.where(ItemData.class).findAll().sort("itemName", Sort.ASCENDING));
         }
     };
 
@@ -81,11 +87,14 @@ public class WareHouseActivity extends AppCompatActivity {
         if (realm.isEmpty()) {
             downloadItems();
         }
+        xmlParser.getXml("laion");
+
         if (!realm.isEmpty()) {
             progressBar.setVisibility(View.GONE);
             progressBarTextView.setVisibility(View.GONE);
         }
-        startAlarmHelper();
+
+        xmlParser.setListener(statusCodeAndAvailabilityAddedListener);
         apiRequests.setListener(allItemsDownLoadedListener);
     }
 
@@ -105,10 +114,6 @@ public class WareHouseActivity extends AppCompatActivity {
         apiRequests.getData("beanies");
         apiRequests.getData("facemasks");
         apiRequests.getData("gloves");
-    }
-
-    private void startAlarmHelper() {
-        alarmHelper.updateEveryOneHour();
     }
 
     @Override
@@ -134,14 +139,13 @@ public class WareHouseActivity extends AppCompatActivity {
                             .contains("itemCategory", itemCategory)
                             .findAll()
                             .sort("itemName", Sort.ASCENDING));
-                    return false;
                 } else {
                     updateContent(realm.where(ItemData.class)
                             .beginsWith("itemName", searchView.getQuery().toString().toUpperCase())
                             .findAll()
                             .sort("itemName", Sort.ASCENDING));
-                    return false;
                 }
+                return false;
             }
 
         });
@@ -153,7 +157,7 @@ public class WareHouseActivity extends AppCompatActivity {
         RealmResults<ItemData> categories = realm.where(ItemData.class).distinct("itemCategory").findAll();
 
         itemCategories.add("All items");
-        for (ItemData item : (RealmResults<ItemData>) categories) {
+        for (ItemData item : categories) {
             Log.d(TAG, "addItemCategoriesToList: " + item.getItemCategory());
             itemCategories.add(item.getItemCategory());
         }
@@ -201,4 +205,6 @@ public class WareHouseActivity extends AppCompatActivity {
         Intent intent = new Intent(this, EditItemActivity.class);
         startActivity(intent);
     }
+
+
 }
