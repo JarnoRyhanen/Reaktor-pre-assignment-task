@@ -89,6 +89,18 @@ public class WareHouseActivity extends AppCompatActivity {
         apiRequests.setListener(allItemsDownLoadedListener);
     }
 
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (firstResume) {
+            addItemsToSpinner();
+            firstResume = false;
+        } else {
+            addItemCategoriesToList();
+            performItemFiltering();
+        }
+    }
+
     public void downloadItems() {
         apiRequests.getData("beanies");
         apiRequests.getData("facemasks");
@@ -116,13 +128,22 @@ public class WareHouseActivity extends AppCompatActivity {
 
             @Override
             public boolean onQueryTextChange(String newText) {
-                updateContent(realm.where(ItemData.class)
-                        .beginsWith("itemName", searchView.getQuery().toString().toUpperCase())
-                        .contains("itemCategory", itemCategory)
-                        .findAll()
-                        .sort("itemName", Sort.ASCENDING));
-                return false;
+                if (!itemCategory.equals("All items")) {
+                    updateContent(realm.where(ItemData.class)
+                            .beginsWith("itemName", searchView.getQuery().toString().toUpperCase())
+                            .contains("itemCategory", itemCategory)
+                            .findAll()
+                            .sort("itemName", Sort.ASCENDING));
+                    return false;
+                } else {
+                    updateContent(realm.where(ItemData.class)
+                            .beginsWith("itemName", searchView.getQuery().toString().toUpperCase())
+                            .findAll()
+                            .sort("itemName", Sort.ASCENDING));
+                    return false;
+                }
             }
+
         });
         return super.onCreateOptionsMenu(menu);
     }
@@ -135,18 +156,6 @@ public class WareHouseActivity extends AppCompatActivity {
         for (ItemData item : (RealmResults<ItemData>) categories) {
             Log.d(TAG, "addItemCategoriesToList: " + item.getItemCategory());
             itemCategories.add(item.getItemCategory());
-        }
-    }
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-        if (firstResume) {
-            addItemsToSpinner();
-            firstResume = false;
-        } else {
-            addItemCategoriesToList();
-            performItemFiltering();
         }
     }
 

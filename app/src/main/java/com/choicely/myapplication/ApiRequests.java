@@ -1,7 +1,6 @@
 package com.choicely.myapplication;
 
 import android.util.Log;
-import android.view.View;
 
 import com.choicely.myapplication.dp.RealmHelper;
 
@@ -11,13 +10,10 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadPoolExecutor;
 
 import io.realm.Realm;
 import okhttp3.Call;
 import okhttp3.Callback;
-import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
@@ -105,5 +101,3 @@ public class ApiRequests {
         this.listener = listener;
     }
 }
-//                int price = Integer.parseInt(obj.getString("color"));
-//                String manufacturer = obj.getString("manufacturer");

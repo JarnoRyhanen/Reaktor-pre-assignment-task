@@ -33,12 +33,12 @@ public class WareHouseRecyclerViewAdapter extends RecyclerView.Adapter<WareHouse
 
     @Override
     public void onBindViewHolder(@NonNull WareHouseViewHolder holder, int position) {
-
         ItemData item = itemDataList.get(position);
 
         holder.itemID = item.getId();
         holder.itemName.setText(item.getItemName());
         holder.itemCategory.setText(item.getItemCategory());
+        holder.itemManufacturer.setText(item.getItemManufacturer());
     }
 
     @Override
@@ -57,6 +57,7 @@ public class WareHouseRecyclerViewAdapter extends RecyclerView.Adapter<WareHouse
     public static class WareHouseViewHolder extends RecyclerView.ViewHolder {
 
         public String itemID;
+        public TextView itemManufacturer;
         public TextView itemName;
         public TextView itemCategory;
 
@@ -65,6 +66,7 @@ public class WareHouseRecyclerViewAdapter extends RecyclerView.Adapter<WareHouse
             itemView.setOnClickListener(onRowClick);
             itemName = itemView.findViewById(R.id.ware_house_list_row_item_name);
             itemCategory = itemView.findViewById(R.id.ware_house_list_row_item_category);
+            itemManufacturer = itemView.findViewById(R.id.ware_house_list_row_item_manufacturer);
         }
 
         private final View.OnClickListener onRowClick = view -> {
@@ -74,6 +76,5 @@ public class WareHouseRecyclerViewAdapter extends RecyclerView.Adapter<WareHouse
             Log.d(TAG, "itemId: " + itemID);
             ctx.startActivity(intent);
         };
-
     }
 }
