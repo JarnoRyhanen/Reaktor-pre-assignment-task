@@ -88,7 +88,8 @@ public class WareHouseActivity extends AppCompatActivity {
         startAlarmHelper();
         apiRequests.setListener(allItemsDownLoadedListener);
     }
-    public void downloadItems(){
+
+    public void downloadItems() {
         apiRequests.getData("beanies");
         apiRequests.getData("facemasks");
         apiRequests.getData("gloves");
@@ -127,10 +128,14 @@ public class WareHouseActivity extends AppCompatActivity {
     }
 
     private void addItemCategoriesToList() {
+        itemCategories.clear();
+        RealmResults<ItemData> categories = realm.where(ItemData.class).distinct("itemCategory").findAll();
+
         itemCategories.add("All items");
-        itemCategories.add("beanies");
-        itemCategories.add("facemasks");
-        itemCategories.add("gloves");
+        for (ItemData item : (RealmResults<ItemData>) categories) {
+            Log.d(TAG, "addItemCategoriesToList: " + item.getItemCategory());
+            itemCategories.add(item.getItemCategory());
+        }
     }
 
     @Override
@@ -140,6 +145,7 @@ public class WareHouseActivity extends AppCompatActivity {
             addItemsToSpinner();
             firstResume = false;
         } else {
+            addItemCategoriesToList();
             performItemFiltering();
         }
     }
@@ -179,6 +185,7 @@ public class WareHouseActivity extends AppCompatActivity {
             adapter.add(item);
         }
         adapter.notifyDataSetChanged();
+        Log.d(TAG, "updateContent: item count: " + adapter.getItemCount());
     }
 
     public void onClick(View view) {

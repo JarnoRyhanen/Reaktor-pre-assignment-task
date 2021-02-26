@@ -70,10 +70,14 @@ public class ApiRequests {
                 String name = obj.getString("name");
                 String category = obj.getString("type");
                 String id = obj.getString("id");
+//                int price = Integer.parseInt(obj.getString("color"));
+                String manufacturer = obj.getString("manufacturer");
+
 
                 itemData.setId(id);
                 itemData.setItemName(name);
                 itemData.setItemCategory(category);
+                itemData.setItemManufacturer(manufacturer);
                 addDataToRealm(itemData);
             }
             if (listener != null) {

@@ -9,6 +9,7 @@ public class ItemData extends RealmObject {
     private String id;
     private String itemCategory;
     private String itemName;
+    private String itemManufacturer;
 
     public String getId() {
         return id;
@@ -34,4 +35,11 @@ public class ItemData extends RealmObject {
         this.itemName = itemName;
     }
 
+    public String getItemManufacturer() {
+        return itemManufacturer;
+    }
+
+    public void setItemManufacturer(String itemManufacturer) {
+        this.itemManufacturer = itemManufacturer;
+    }
 }
