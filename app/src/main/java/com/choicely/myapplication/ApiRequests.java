@@ -23,7 +23,6 @@ public class ApiRequests {
 
     private final static String TAG = "ApiRequests";
     private OkHttpClient client = new OkHttpClient();
-    private int itemCategoryCount = 0;
 
     public String getData(String item) {
 
@@ -31,7 +30,6 @@ public class ApiRequests {
         builder.connectTimeout(5, TimeUnit.MINUTES)
                 .writeTimeout(5, TimeUnit.MINUTES)
                 .readTimeout(5, TimeUnit.MINUTES);
-
         client = builder.build();
 
         String url = "https://bad-api-assignment.reaktor.com/v2/products/" + item;
@@ -54,65 +52,88 @@ public class ApiRequests {
                     parseData(response);
                 } else {
                     Log.d(TAG, "Response Failed " + response.code());
+                    if (apiRequestsFailureListener != null) {
+                        apiRequestsFailureListener.onFailure(response.code());
+                    }
                 }
             }
         });
         return null;
     }
 
+    private ApiRequestsFailureListener apiRequestsFailureListener;
+
+    public interface ApiRequestsFailureListener {
+        void onFailure(int errorCode);
+    }
+
+    public void setApiRequestsFailureListener(ApiRequestsFailureListener listener) {
+        this.apiRequestsFailureListener = listener;
+    }
 
     private void parseData(@NotNull Response response) {
         Log.d(TAG, "Response was successful");
-        try {
-            String myResponse = response.body().string();
-            Log.d(TAG, "onResponse: " + myResponse);
-            JSONArray dataArray = new JSONArray(myResponse);
-            Log.d(TAG, "parseData: " + dataArray.length());
-            Log.d(TAG, "parseData: STARTING TO PARSE DATA BRRRRRRRRRRR");
 
-            for (int i = 0; i < dataArray.length(); i++) {
-                ItemData itemData = new ItemData();
-                itemCategoryCount++;
-                Log.d(TAG, "parseData: " + itemCategoryCount);
-
-                JSONObject obj = dataArray.getJSONObject(i);
-                String name = obj.getString("name");
-                String category = obj.getString("type");
-                String id = obj.getString("id");
-                String manufacturer = obj.getString("manufacturer");
-
-                itemData.setId(id);
-                itemData.setItemName(name);
-                itemData.setItemCategory(category);
-                itemData.setItemManufacturer(manufacturer);
-
-                addDataToRealm(itemData);
+        Runnable runAfterTransaction = () -> {
+            if (allItemsDownLoadedListener != null) {
+                allItemsDownLoadedListener.onItemDownLoaded();
             }
-            if (listener != null) {
-                listener.onItemDownLoaded();
-            }
+        };
+        RealmHelper.runAsyncRealmTransaction(realm -> {
+            try {
+                String myResponse = response.body().string();
+                Log.d(TAG, "onResponse: " + myResponse);
 
-        } catch (JSONException | IOException e) {
-            e.printStackTrace();
-        }
+                JSONArray dataArray = new JSONArray(myResponse);
+                Log.d(TAG, "parseData: " + dataArray.length());
+
+                for (int i = 0; i < dataArray.length(); i++) {
+                    ItemData itemData = new ItemData();
+
+                    JSONObject obj = dataArray.getJSONObject(i);
+                    String name = obj.getString("name");
+                    String category = obj.getString("type");
+                    String id = obj.getString("id");
+                    String manufacturer = obj.getString("manufacturer");
+
+                    itemData.setId(id);
+                    itemData.setItemName(name);
+                    itemData.setItemCategory(category);
+                    itemData.setItemManufacturer(manufacturer);
+                    addDataToRealm(realm, itemData);
+
+                    if (oneItemLoadedListener != null) {
+                        oneItemLoadedListener.onOneItemLoaded();
+                    }
+                }
+            } catch (JSONException | IOException e) {
+                e.printStackTrace();
+            }
+        }, runAfterTransaction);
     }
 
-    private void addDataToRealm(ItemData itemData) {
-        Realm realm = RealmHelper.getInstance().getCurrentThreadRealm();
-
-        realm.executeTransaction(realm1 -> realm.copyToRealmOrUpdate(itemData));
-        realm.close();
+    private void addDataToRealm(Realm realm, ItemData itemData) {
+        realm.insertOrUpdate(itemData);
     }
 
+    private oneItemLoadedListener oneItemLoadedListener;
 
-    private allItemsDownLoadedListener listener;
+    public interface oneItemLoadedListener {
+        void onOneItemLoaded();
+    }
+
+    public void setOneItemLoadedListener(oneItemLoadedListener listener) {
+        this.oneItemLoadedListener = listener;
+    }
+
+    private allItemsDownLoadedListener allItemsDownLoadedListener;
 
     public interface allItemsDownLoadedListener {
         void onItemDownLoaded();
     }
 
     public void setListener(allItemsDownLoadedListener listener) {
-        this.listener = listener;
+        this.allItemsDownLoadedListener = listener;
     }
 }
 //                int price = Integer.parseInt(obj.getString("color"));

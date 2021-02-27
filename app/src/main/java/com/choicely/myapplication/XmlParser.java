@@ -4,8 +4,6 @@ import android.util.Log;
 import android.util.Pair;
 import android.util.Xml;
 
-import androidx.annotation.LongDef;
-
 import com.choicely.myapplication.dp.RealmHelper;
 
 import org.jetbrains.annotations.NotNull;
@@ -19,9 +17,6 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.sql.SQLOutput;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import io.realm.Realm;
@@ -37,9 +32,8 @@ public class XmlParser {
     private static final String ns = null;
 
     private OkHttpClient client = new OkHttpClient();
-    private final List<Pair<String, String>> entries = new ArrayList();
 
-    public void getXml(String manufacturer) {
+    public void getManufacturerXmlData(String manufacturer) {
 
         String url = "https://bad-api-assignment.reaktor.com/v2/availability/" + manufacturer;
         Log.d(TAG, "url: " + url);
@@ -63,100 +57,121 @@ public class XmlParser {
             }
 
             @Override
-            public void onResponse(@NotNull Call call, @NotNull Response response) throws IOException {
+            public void onResponse(@NotNull Call call, @NotNull Response response) {
                 if (response.isSuccessful()) {
-                    parseJsonData(response);
+                    parseJsonData(response, manufacturer);
                 } else {
                     Log.d(TAG, "Response Failed " + response.code());
+                    if (xmlParserFailureListener != null) {
+                        xmlParserFailureListener.onFailure(response.code());
+                        Log.d(TAG, "onResponse: failure listener activated");
+                    }
                 }
             }
         });
     }
 
-    private void parseJsonData(Response response) {
+    private XmlParserFailureListener xmlParserFailureListener;
+
+    public interface XmlParserFailureListener {
+        void onFailure(int errorCode);
+    }
+
+    public void setXmlParserFailureListener(XmlParserFailureListener listener) {
+        this.xmlParserFailureListener = listener;
+    }
+
+    private void parseJsonData(Response response, String manufacturer) {
 
         Log.d(TAG, "Response was successful");
-        try {
-            Log.d(TAG, "parseJsonData: " + response.code());
-            String myResponse = response.body().string();
+        Runnable runAfterTransaction = () -> {
+            if (onSuccessListener != null) {
+                Log.d(TAG, "parseJsonData: listener heard");
+                onSuccessListener.onSuccess();
+            }
+        };
+        RealmHelper.runAsyncRealmTransaction(realm -> {
+            try {
+                Log.d(TAG, "parseJsonData: " + response.code());
+                String myResponse = response.body().string();
 
-            JSONObject jsonObject = new JSONObject(myResponse);
-            JSONArray dataArray = jsonObject.getJSONArray("response");
-            Log.d(TAG, "parseData: " + dataArray.length());
+                if (myResponse != null) {
 
-            for (int i = 0; i < dataArray.length(); i++) {
-                Realm realm = RealmHelper.getInstance().getCurrentThreadRealm();
+                    JSONObject jsonObject = new JSONObject(myResponse);
+                    JSONArray dataArray = jsonObject.getJSONArray("response");
+                    Log.d(TAG, "parseData: " + dataArray.length());
 
-                Log.d(TAG, "\t parseJsonData: NEW OBJECT STARTS HERE");
-                JSONObject obj = dataArray.getJSONObject(i);
+                    for (int i = 0; i < dataArray.length(); i++) {
 
-                String itemID = obj.getString("id");
+                        JSONObject obj = dataArray.getJSONObject(i);
+                        String itemID = obj.getString("id").toLowerCase();
 
-                ItemData item = realm.where(ItemData.class).equalTo("id", itemID.toLowerCase()).findFirst();
-                String xmlPayLoad = obj.getString("DATAPAYLOAD");
-                Log.d(TAG, "parseJsonData: " + xmlPayLoad);
+                        String xmlPayLoad = obj.getString("DATAPAYLOAD");
 
-                InputStream xmlPayLoadInputStream = new ByteArrayInputStream(xmlPayLoad.getBytes(StandardCharsets.UTF_8));
-                parse(xmlPayLoadInputStream);
-
-                if (entries.get(i).first != null && entries.get(i).second != null && item != null) {
-                    realm.beginTransaction();
-                    item.setHttpStatusCode(entries.get(i).first);
-                    item.setAvailability(entries.get(i).second);
-                    realm.copyToRealmOrUpdate(item);
-                    realm.commitTransaction();
-                    Log.d(TAG, "OBJECT ENDS HERE");
+                        InputStream xmlPayLoadInputStream = new ByteArrayInputStream(xmlPayLoad.getBytes(StandardCharsets.UTF_8));
+                        Pair<String, String> pair = parse(xmlPayLoadInputStream);
+                        addDataToRealm(realm, itemID, pair);
+                    }
                 }
-                if(listener != null){
-                    Log.d(TAG, "parseJsonData: listener heard");
-                    listener.onStatusCodeAndAvailabilityLoaded();
+            } catch (JSONException | XmlPullParserException | IOException e) {
+                e.printStackTrace();
+                if (jsonExceptionListener != null) {
+                    jsonExceptionListener.onJsonFailed(manufacturer);
                 }
             }
-        } catch (JSONException | IOException | XmlPullParserException e) {
-            e.printStackTrace();
+        }, runAfterTransaction);
+    }
+
+    private JsonExceptionListener jsonExceptionListener;
+
+    public interface JsonExceptionListener {
+        void onJsonFailed(String manufacturer);
+    }
+
+    public void setJsonExceptionListener(JsonExceptionListener listener) {
+        this.jsonExceptionListener = listener;
+    }
+
+    private void addDataToRealm(Realm realm, String itemID, Pair<String, String> pair) {
+        ItemData item = realm.where(ItemData.class).equalTo("id", itemID).findFirst();
+
+        if (item != null) {
+            item.setHttpStatusCode(pair.first);
+            item.setAvailability(pair.second);
+            realm.insertOrUpdate(item);
         }
     }
 
-//    public void findCorrectItem(String itemID, int index) {
-//
-//
-//    }
+    private OnSuccessListener onSuccessListener;
 
-//    private void addDataToRealm(ItemData itemData) {
-//        Realm realm = RealmHelper.getInstance().getCurrentThreadRealm();
-//        realm.executeTransaction(realm1 -> realm1.copyToRealmOrUpdate(itemData));
-//        realm.close();
-//    }
-
-    private statusCodeAndAvailabilityAddedListener listener;
-
-    public interface statusCodeAndAvailabilityAddedListener{
-        void onStatusCodeAndAvailabilityLoaded();
+    public interface OnSuccessListener {
+        void onSuccess();
     }
 
-    public void setListener(statusCodeAndAvailabilityAddedListener listener) {
-        this.listener = listener;
+    public void setOnSuccessListener(OnSuccessListener listener) {
+        this.onSuccessListener = listener;
     }
-    
-    public void parse(InputStream in) throws XmlPullParserException, IOException {
+
+    public Pair<String, String> parse(InputStream in) throws XmlPullParserException, IOException {
+        Pair<String, String> pair = null;
         try {
             XmlPullParser parser = Xml.newPullParser();
             parser.setFeature(XmlPullParser.FEATURE_PROCESS_NAMESPACES, false);
             parser.setInput(in, null);
             parser.nextTag();
-            readXml(parser);
+            pair = readXml(parser);
         } finally {
             in.close();
         }
+        return pair;
     }
 
-    private void readXml(XmlPullParser parser) throws IOException, XmlPullParserException {
+    private Pair<String, String> readXml(XmlPullParser parser) throws IOException, XmlPullParserException {
 
         parser.require(XmlPullParser.START_TAG, ns, "AVAILABILITY");
         String httpCode = null;
         String availability = null;
 
-        int i = 0;
 
         while (parser.next() != XmlPullParser.END_TAG) {
             if (parser.getEventType() != XmlPullParser.START_TAG) {
@@ -166,13 +181,10 @@ public class XmlParser {
             if (name.equals("CODE")) {
                 httpCode = readHttpCode(parser);
             } else if (name.equals("INSTOCKVALUE")) {
-
                 availability = readAvailability(parser);
-                Log.d(TAG, "readXml: httpCode: " + httpCode + ", stockValue: " + availability);
-                entries.add(new Pair<>(httpCode, availability));
-                i++;
             }
         }
+        return new Pair<>(httpCode, availability);
     }
 
 

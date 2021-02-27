@@ -5,6 +5,14 @@
     >
 
     <item
+        android:id="@+id/ware_house_activity_menu_error_message_field"
+        android:title="Error"
+        android:visible="false"
+        app:showAsAction="ifRoom"
+
+        />
+
+    <item
         android:id="@+id/action_search_libraries"
         android:icon="@drawable/ic_baseline_search_24"
         android:title="search"

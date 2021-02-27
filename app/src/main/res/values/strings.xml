@@ -4,9 +4,10 @@
     <string name="add_new_item">Add new item+</string>
     <string name="item_name">Item name</string>
     <string name="category_name">Category</string>
-    <string name="progress_bar_text">Fetching items, please wait, this may take a while</string>
+    <string name="progress_bar_text">Loading items, this may take a while</string>
     <string name="search_query_hint">Search for items</string>
     <string name="manufacturer_name">Manufacturer</string>
     <string name="availability">Availability</string>
     <string name="http_code">Http code</string>
+    <string name="items_loaded">Items loaded:   </string>
 </resources>

@@ -2,6 +2,9 @@ package com.choicely.myapplication;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.text.SpannableString;
+import android.text.SpannableStringBuilder;
+import android.text.style.ForegroundColorSpan;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -34,24 +37,50 @@ public class WareHouseActivity extends AppCompatActivity {
 
     private final XmlParser xmlParser = new XmlParser();
     private final ApiRequests apiRequests = new ApiRequests();
-
     private final Realm realm = RealmHelper.getInstance().getRealm();
 
     private final ApiRequests.allItemsDownLoadedListener allItemsDownLoadedListener = new ApiRequests.allItemsDownLoadedListener() {
         @Override
         public void onItemDownLoaded() {
             runOnUiThread(() -> {
-                progressBar.setVisibility(View.GONE);
-                progressBarTextView.setVisibility(View.GONE);
-                performItemFiltering();
+                dataCounter += 1;
+                if (dataCounter == 2) {
+                    progressBar.setVisibility(View.GONE);
+                    progressBarTextView.setVisibility(View.GONE);
+                    itemDownLoadedCounter.setVisibility(View.GONE);
+                    itemsLoadedTextView.setVisibility(View.GONE);
+                    addItemCategoriesToList();
+                    performItemFiltering();
+                    getXmlData();
+                    Log.d(TAG, "onItemDownLoaded: ALL ITEMS LOADED");
+                }
             });
         }
     };
-    private final XmlParser.statusCodeAndAvailabilityAddedListener statusCodeAndAvailabilityAddedListener = new XmlParser.statusCodeAndAvailabilityAddedListener() {
+
+    private int itemsLoadedCounter = 0;
+    private final ApiRequests.oneItemLoadedListener oneItemLoadedListener = () -> {
+        runOnUiThread(() -> {
+            updateFoundItemCount(itemsLoadedCounter);
+            itemsLoadedCounter += 1;
+        });
+    };
+    private final XmlParser.OnSuccessListener onSuccessListener = () -> runOnUiThread(this::performItemFiltering);
+    private final ApiRequests.ApiRequestsFailureListener apiRequestsFailureListener = new ApiRequests.ApiRequestsFailureListener() {
         @Override
-        public void onStatusCodeAndAvailabilityLoaded() {
-            updateContent(realm.where(ItemData.class).findAll().sort("itemName", Sort.ASCENDING));
+        public void onFailure(int errorCode) {
+            runOnUiThread(() -> makeErrorMessage(errorCode, menu));
         }
+    };
+    private final XmlParser.XmlParserFailureListener xmlParserFailureListener = new XmlParser.XmlParserFailureListener() {
+        @Override
+        public void onFailure(int errorCode) {
+            runOnUiThread(() -> makeErrorMessage(errorCode, menu));
+        }
+    };
+    private final XmlParser.JsonExceptionListener jsonExceptionListener = manufacturer -> {
+        Log.d(TAG, "onJsonFailed: RUNNING AGAIN WITH MANUFACTURER:" + manufacturer);
+        xmlParser.getManufacturerXmlData(manufacturer);
     };
 
     private boolean firstResume;
@@ -59,13 +88,18 @@ public class WareHouseActivity extends AppCompatActivity {
     private SearchView searchView;
     private ProgressBar progressBar;
     private TextView progressBarTextView;
+    private TextView itemDownLoadedCounter;
+    private TextView itemsLoadedTextView;
 
     private Spinner spinner;
     private String itemCategory;
     private RecyclerView recyclerView;
     private WareHouseRecyclerViewAdapter adapter;
 
-    private final List<String> itemCategories = new ArrayList<>();
+    private final List<String> itemFilters = new ArrayList<>();
+    private final List<String> itemManufacturers = new ArrayList<>();
+
+    private int dataCounter = 0;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -75,6 +109,9 @@ public class WareHouseActivity extends AppCompatActivity {
         progressBar = findViewById(R.id.ware_house_activity_progress_bar);
         progressBarTextView = findViewById(R.id.ware_house_activity_progress_bar_text);
         spinner = findViewById(R.id.ware_house_activity_spinner);
+
+        itemDownLoadedCounter = findViewById(R.id.ware_house_activity_progress_items_found_count);
+        itemsLoadedTextView = findViewById(R.id.ware_house_activity_progress_items_found_text_view);
 
         recyclerView = findViewById(R.id.ware_house_activity_recycler_view);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
@@ -87,15 +124,13 @@ public class WareHouseActivity extends AppCompatActivity {
         if (realm.isEmpty()) {
             downloadItems();
         }
-        xmlParser.getXml("laion");
-
         if (!realm.isEmpty()) {
             progressBar.setVisibility(View.GONE);
             progressBarTextView.setVisibility(View.GONE);
+            itemDownLoadedCounter.setVisibility(View.GONE);
+            itemsLoadedTextView.setVisibility(View.GONE);
         }
-
-        xmlParser.setListener(statusCodeAndAvailabilityAddedListener);
-        apiRequests.setListener(allItemsDownLoadedListener);
+        setAllListeners();
     }
 
     @Override
@@ -110,14 +145,34 @@ public class WareHouseActivity extends AppCompatActivity {
         }
     }
 
-    public void downloadItems() {
+    private void setAllListeners() {
+        apiRequests.setOneItemLoadedListener(oneItemLoadedListener);
+        xmlParser.setOnSuccessListener(onSuccessListener);
+        apiRequests.setListener(allItemsDownLoadedListener);
+
+        apiRequests.setApiRequestsFailureListener(apiRequestsFailureListener);
+        xmlParser.setXmlParserFailureListener(xmlParserFailureListener);
+        xmlParser.setJsonExceptionListener(jsonExceptionListener);
+    }
+
+    private void getXmlData() {
+        for (int i = 0; i < itemManufacturers.size(); i++) {
+            Log.d(TAG, "getXmldata: manufacturer: " + itemManufacturers.get(i));
+            xmlParser.getManufacturerXmlData(itemManufacturers.get(i));
+        }
+    }
+
+    private void downloadItems() {
         apiRequests.getData("beanies");
         apiRequests.getData("facemasks");
         apiRequests.getData("gloves");
     }
 
+    private Menu menu;
+
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
+        this.menu = menu;
         MenuInflater inflater = getMenuInflater();
         inflater.inflate(R.menu.ware_house_activity_menu, menu);
 
@@ -147,24 +202,62 @@ public class WareHouseActivity extends AppCompatActivity {
                 }
                 return false;
             }
-
         });
         return super.onCreateOptionsMenu(menu);
     }
 
+    private void makeErrorMessage(int errorCode, Menu menu) {
+        SpannableStringBuilder builder = new SpannableStringBuilder();
+        String errorMessage = "Error: " + String.valueOf(errorCode);
+        SpannableString redErrorMessage = new SpannableString(errorMessage);
+
+        if (menu.findItem(R.id.ware_house_activity_menu_error_message_field) != null) {
+            MenuItem errorMessageItem = menu.findItem(R.id.ware_house_activity_menu_error_message_field);
+            redErrorMessage.setSpan(new ForegroundColorSpan(getResources().getColor(R.color.red)), 0, redErrorMessage.length(), 0);
+            builder.append(redErrorMessage);
+            errorMessageItem.setVisible(true);
+            errorMessageItem.setTitle(redErrorMessage);
+        }
+    }
+
     private void addItemCategoriesToList() {
-        itemCategories.clear();
+        itemFilters.clear();
         RealmResults<ItemData> categories = realm.where(ItemData.class).distinct("itemCategory").findAll();
 
-        itemCategories.add("All items");
+        itemFilters.add("All items");
         for (ItemData item : categories) {
             Log.d(TAG, "addItemCategoriesToList: " + item.getItemCategory());
-            itemCategories.add(item.getItemCategory());
+            itemFilters.add(item.getItemCategory());
+        }
+        getAllItemManufacturers();
+        getAllItemAvailabilityValues();
+    }
+
+    private void getAllItemManufacturers() {
+        RealmResults<ItemData> manufacturers = realm.where(ItemData.class).distinct("itemManufacturer").findAll();
+
+        for (ItemData item : manufacturers) {
+            if (item.getItemManufacturer() != null) {
+                Log.d(TAG, "getAllItemManufacturers: " + item.getItemManufacturer());
+                itemFilters.add(item.getItemManufacturer());
+                itemManufacturers.add(item.getItemManufacturer());
+            }
+        }
+    }
+
+    private void getAllItemAvailabilityValues() {
+        RealmResults<ItemData> availabilityValues = realm.where(ItemData.class).distinct("itemAvailabilityValue").findAll();
+
+        for (ItemData item : availabilityValues) {
+            if (item.getAvailabilityValue() != null) {
+                Log.d(TAG, "getAllItemManufacturers: " + item.getAvailabilityValue());
+                itemFilters.add(item.getAvailabilityValue());
+            }
         }
     }
 
     private void addItemsToSpinner() {
-        ArrayAdapter<String> arrayAdapter = new ArrayAdapter<>(this, R.layout.spinner_item, itemCategories);
+        ArrayAdapter<String> arrayAdapter = new ArrayAdapter<>(this, R.layout.spinner_item, itemFilters);
         spinner.setAdapter(arrayAdapter);
 
         spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
@@ -206,5 +299,7 @@ public class WareHouseActivity extends AppCompatActivity {
         startActivity(intent);
     }
 
-
+    private void updateFoundItemCount(int itemsFoundCount) {
+        itemDownLoadedCounter.setText(String.valueOf(itemsFoundCount));
+    }
 }
