@@ -1,4 +1,4 @@
-    package com.choicely.myapplication;
+package com.choicely.myapplication;
 
 import android.os.Bundle;
 import android.util.Log;
@@ -82,11 +82,19 @@ public class EditItemActivity extends AppCompatActivity {
         return false;
     }
 
+    private String manufacturer = null;
+    private String httpStatusCode = null;
+    private String availability = null;
+
     private void loadItem() {
         ItemData item = realm.where(ItemData.class).equalTo("id", itemID).findFirst();
 
         itemNameEditText.setText(item.getItemName());
         itemCategoryEditText.setText(item.getItemCategory());
+        manufacturer = item.getItemManufacturer();
+        httpStatusCode = item.getHttpStatusCode();
+        availability = item.getAvailabilityValue();
+
         Log.d(TAG, "Item loaded with id: " + itemID + ", named " + itemNameEditText.getText());
     }
 
@@ -96,6 +104,9 @@ public class EditItemActivity extends AppCompatActivity {
             itemData.setId(itemID);
             itemData.setItemName(itemNameEditText.getText().toString());
             itemData.setItemCategory(itemCategoryEditText.getText().toString());
+            itemData.setItemManufacturer(manufacturer);
+            itemData.setHttpStatusCode(httpStatusCode);
+            itemData.setAvailability(availability);
 
             realm.copyToRealmOrUpdate(itemData);
         });

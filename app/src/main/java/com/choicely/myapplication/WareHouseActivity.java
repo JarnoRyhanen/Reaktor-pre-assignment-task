@@ -26,8 +26,10 @@ import com.choicely.myapplication.dp.RealmHelper;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 import io.realm.Realm;
+import io.realm.RealmObject;
 import io.realm.RealmResults;
 import io.realm.Sort;
 
@@ -44,14 +46,14 @@ public class WareHouseActivity extends AppCompatActivity {
         public void onItemDownLoaded() {
             runOnUiThread(() -> {
                 dataCounter += 1;
-                if (dataCounter == 2) {
+                if (dataCounter == 3) {
                     progressBar.setVisibility(View.GONE);
                     progressBarTextView.setVisibility(View.GONE);
                     itemDownLoadedCounter.setVisibility(View.GONE);
                     itemsLoadedTextView.setVisibility(View.GONE);
-                    addItemCategoriesToList();
-                    performItemFiltering();
+                    addItemFilters();
                     getXmlData();
+                    performItemFiltering();
                     Log.d(TAG, "onItemDownLoaded: ALL ITEMS LOADED");
                 }
             });
@@ -65,7 +67,10 @@ public class WareHouseActivity extends AppCompatActivity {
             itemsLoadedCounter += 1;
         });
     };
-    private final XmlParser.OnSuccessListener onSuccessListener = () -> runOnUiThread(this::performItemFiltering);
+    private final XmlParser.OnSuccessListener onSuccessListener = () -> runOnUiThread(() -> {
+        addItemFilters();
+        performItemFiltering();
+    });
     private final ApiRequests.ApiRequestsFailureListener apiRequestsFailureListener = new ApiRequests.ApiRequestsFailureListener() {
         @Override
         public void onFailure(int errorCode) {
@@ -92,7 +97,7 @@ public class WareHouseActivity extends AppCompatActivity {
     private TextView itemsLoadedTextView;
 
     private Spinner spinner;
-    private String itemCategory;
+    private String currentItemFilter;
     private RecyclerView recyclerView;
     private WareHouseRecyclerViewAdapter adapter;
 
@@ -119,7 +124,8 @@ public class WareHouseActivity extends AppCompatActivity {
         recyclerView.setAdapter(adapter);
 
         firstResume = true;
-        addItemCategoriesToList();
+        addItemFilters();
+
 
         if (realm.isEmpty()) {
             downloadItems();
@@ -131,6 +137,42 @@ public class WareHouseActivity extends AppCompatActivity {
             itemsLoadedTextView.setVisibility(View.GONE);
         }
         setAllListeners();
+        checkWhenLastLoaded();
+    }
+
+    private void checkWhenLastLoaded() {
+        long timeNow = System.currentTimeMillis();
+        Log.d(TAG, "checkWhenLastLoaded: time now: " + timeNow);
+
+        Realm realm = RealmHelper.getInstance().getRealm();
+        LastTimeLoaded lastTimeLoaded = realm.where(LastTimeLoaded.class).findFirst();
+
+        if (lastTimeLoaded == null) {
+            Log.d(TAG, "checkWhenLastLoaded: LastTimeLoaded is empty");
+            updateLastTimeLoaded();
+        } else if (lastTimeLoaded != null && lastTimeLoaded.getPreviousTimeLoaded() < timeNow) {
+            Log.d(TAG, "checkWhenLastLoaded: " + lastTimeLoaded.getPreviousTimeLoaded());
+            Log.d(TAG, "checkWhenLastLoaded: Stored time is lower");
+            updateLastTimeLoaded();
+        } else {
+            Log.d(TAG, "checkWhenLastLoaded: " + lastTimeLoaded.getPreviousTimeLoaded());
+            Log.d(TAG, "checkWhenLastLoaded: stored time is bigger");
+            Log.d(TAG, "checkWhenLastLoaded: time left until update: " + ((lastTimeLoaded.getPreviousTimeLoaded()) - (timeNow)) / 1000 / 60 + " minutes");
+        }
+    }
+
+    private void updateLastTimeLoaded() {
+        long time = System.currentTimeMillis() + 3_600_000;
+        Realm realm = RealmHelper.getInstance().getRealm();
+
+        Log.d(TAG, "check: " + time + " is the new time");
+        realm.executeTransaction(realm1 -> {
+            realm1.deleteAll();
+            LastTimeLoaded lastTimeLoaded = new LastTimeLoaded();
+            lastTimeLoaded.setPreviousTimeLoaded(time);
+            realm1.insertOrUpdate(lastTimeLoaded);
+        });
+        downloadItems();
     }
 
     @Override
@@ -140,7 +182,7 @@ public class WareHouseActivity extends AppCompatActivity {
             addItemsToSpinner();
             firstResume = false;
         } else {
-            addItemCategoriesToList();
+            addItemFilters();
             performItemFiltering();
         }
     }
@@ -163,9 +205,9 @@ public class WareHouseActivity extends AppCompatActivity {
     }
 
     private void downloadItems() {
+        apiRequests.getData("gloves");
         apiRequests.getData("beanies");
         apiRequests.getData("facemasks");
-        apiRequests.getData("gloves");
     }
 
     private Menu menu;
@@ -188,10 +230,10 @@ public class WareHouseActivity extends AppCompatActivity {
 
             @Override
             public boolean onQueryTextChange(String newText) {
-                if (!itemCategory.equals("All items")) {
+                if (!currentItemFilter.equals("All items")) {
                     updateContent(realm.where(ItemData.class)
                             .beginsWith("itemName", searchView.getQuery().toString().toUpperCase())
-                            .contains("itemCategory", itemCategory)
+                            .contains("itemCategory", currentItemFilter)
                             .findAll()
                             .sort("itemName", Sort.ASCENDING));
                 } else {
@@ -220,41 +262,39 @@ public class WareHouseActivity extends AppCompatActivity {
         }
     }
 
-    private void addItemCategoriesToList() {
+    private void addItemFilters() {
         itemFilters.clear();
-        RealmResults<ItemData> categories = realm.where(ItemData.class).distinct("itemCategory").findAll();
-
         itemFilters.add("All items");
-        for (ItemData item : categories) {
-            Log.d(TAG, "addItemCategoriesToList: " + item.getItemCategory());
-            itemFilters.add(item.getItemCategory());
-        }
-        getAllItemManufacturers();
-        getAllItemAvailabilityValues();
-    }
 
-    private void getAllItemManufacturers() {
+        RealmResults<ItemData> categories = realm.where(ItemData.class).distinct("itemCategory").findAll();
+        for (ItemData item : categories) {
+            if (item.getItemCategory() != null) {
+                itemFilters.add(item.getItemCategory());
+                Log.d(TAG, "addItemFilters: " + item.getItemCategory());
+            }
+        }
+
+        RealmResults<ItemData> availabilityValue = realm.where(ItemData.class).distinct("itemAvailabilityValue").findAll();
+
+        for (ItemData item : availabilityValue) {
+            if (item.getAvailabilityValue() != null) {
+                itemFilters.add(item.getAvailabilityValue());
+                Log.d(TAG, "addItemFilters: " + item.getAvailabilityValue());
+            }
+        }
         RealmResults<ItemData> manufacturers = realm.where(ItemData.class).distinct("itemManufacturer").findAll();
 
         for (ItemData item : manufacturers) {
             if (item.getItemManufacturer() != null) {
-                Log.d(TAG, "getAllItemManufacturers: " + item.getItemManufacturer());
                 itemFilters.add(item.getItemManufacturer());
                 itemManufacturers.add(item.getItemManufacturer());
+                Log.d(TAG, "addItemFilters: " + item.getItemManufacturer());
             }
         }
+        Log.d(TAG, "addItemFilters: size: " + itemFilters.size() + ", " + itemFilters);
     }
 
-    private void getAllItemAvailabilityValues() {
-        RealmResults<ItemData> availabilityValues = realm.where(ItemData.class).distinct("itemAvailabilityValue").findAll();
-
-        for (ItemData item : availabilityValues) {
-            if (item.getAvailabilityValue() != null) {
-                Log.d(TAG, "getAllItemManufacturers: " + item.getAvailabilityValue());
-                itemFilters.add(item.getAvailabilityValue());
-            }
-        }
-    }
+    private int spinnerPosition;
 
     private void addItemsToSpinner() {
         ArrayAdapter<String> arrayAdapter = new ArrayAdapter<>(this, R.layout.spinner_item, itemFilters);
@@ -263,8 +303,9 @@ public class WareHouseActivity extends AppCompatActivity {
         spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                itemCategory = parent.getItemAtPosition(position).toString();
-                Log.d(TAG, "onItemSelected: " + itemCategory);
+                currentItemFilter = parent.getItemAtPosition(position).toString();
+                Log.d(TAG, "onItemSelected: " + currentItemFilter);
+                spinnerPosition = position;
                 performItemFiltering();
             }
 
@@ -276,11 +317,17 @@ public class WareHouseActivity extends AppCompatActivity {
     }
 
     private void performItemFiltering() {
-        if (itemCategory == null || itemCategory.equals("All items")) {
+
+        if (currentItemFilter == null || currentItemFilter.equals("All items")) {
             updateContent(realm.where(ItemData.class).findAll().sort("itemName", Sort.ASCENDING));
         } else {
-            Log.d(TAG, "performItemFiltering: item category selected: " + itemCategory);
-            updateContent(realm.where(ItemData.class).contains("itemCategory", itemCategory).findAll().sort("itemName", Sort.ASCENDING));
+            RealmResults<ItemData> itemData = realm.where(ItemData.class)
+                    .equalTo("itemCategory", currentItemFilter).or()
+                    .equalTo("itemManufacturer", currentItemFilter).or()
+                    .equalTo("itemAvailabilityValue", currentItemFilter)
+                    .findAll()
+                    .sort("itemName", Sort.ASCENDING);
+            updateContent(itemData);
         }
     }
 
